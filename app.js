@@ -19,7 +19,8 @@
     offlineQueue: [],
     selectedCropForOrder: null,
     searchQuery: '',
-    demandFilter: 'all'
+    demandFilter: 'all',
+    quickFilter: 'all'
   };
 
   // ---------------------------------------------------------------------------
@@ -76,6 +77,7 @@
 
     // Trigger initial AI suggestion for Tomato
     evaluateAiPrice("Tomato");
+    evaluateSimulator();
   }
 
   function persist() {
@@ -370,15 +372,30 @@
       list = list.filter(c => c.name.toLowerCase().includes(q) || c.location.toLowerCase().includes(q));
     }
 
-    // Filter by demand
+    // Filter by demand dropdown
     if (STATE.demandFilter !== 'all') {
       list = list.filter(c => c.demandLevel === STATE.demandFilter);
+    }
+
+    // Filter by quick filter pills
+    if (STATE.quickFilter && STATE.quickFilter !== 'all') {
+      if (STATE.quickFilter === 'under20') {
+        list = list.filter(c => c.pricePerKg <= 20);
+      } else {
+        list = list.filter(c => c.demandLevel === STATE.quickFilter);
+      }
+    }
+
+    // Dynamic result count indicator
+    const resultsCountEl = document.getElementById('market-results-count');
+    if (resultsCountEl) {
+      resultsCountEl.textContent = `Showing ${list.length} verified produce ${list.length === 1 ? 'listing' : 'listings'} direct from farm`;
     }
 
     if (list.length === 0) {
       container.innerHTML = `
         <div style="grid-column: 1 / -1; padding: 40px; text-align: center; background:#fff; border:1px solid var(--gray-200); border-radius:var(--border-radius);">
-          <p style="color:var(--gray-600); font-weight:600;">No crops match your filter.</p>
+          <p style="color:var(--gray-600); font-weight:600;">No crops match your filter criteria.</p>
         </div>
       `;
       return;
@@ -430,6 +447,22 @@
   function renderFarmerHub() {
     const cropsTbody = document.getElementById('farmer-crops-tbody');
     const ordersTbody = document.getElementById('farmer-orders-tbody');
+
+    // Update Farmer Live Statistics
+    const farmerCrops = STATE.crops.filter(c => !STATE.currentUser || c.farmerId === STATE.currentUser.id || true);
+    const totalStock = farmerCrops.reduce((acc, c) => acc + (c.quantity || 0), 0);
+    const incomingOrders = STATE.orders.length;
+    const totalRevenue = STATE.orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+
+    const fStatCrops = document.getElementById('farmer-stat-crops');
+    const fStatStock = document.getElementById('farmer-stat-stock');
+    const fStatOrders = document.getElementById('farmer-stat-orders');
+    const fStatRev = document.getElementById('farmer-stat-revenue');
+
+    if (fStatCrops) fStatCrops.textContent = farmerCrops.length;
+    if (fStatStock) fStatStock.textContent = `${totalStock.toLocaleString()} kg`;
+    if (fStatOrders) fStatOrders.textContent = incomingOrders;
+    if (fStatRev) fStatRev.textContent = `₹${totalRevenue.toLocaleString()}`;
 
     if (cropsTbody) {
       cropsTbody.innerHTML = STATE.crops.map(c => {
@@ -483,7 +516,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Consumer Hub Render
+  // Consumer Hub Render (With Interactive Delivery Timeline)
   // ---------------------------------------------------------------------------
   function renderConsumerHub() {
     const tbody = document.getElementById('consumer-orders-tbody');
@@ -498,6 +531,16 @@
       const statusClass = o.status.toLowerCase().replace(' ', '-');
       const transporterText = o.transporterName ? `🚚 ${o.transporterName}` : `<span style="color:var(--gray-400);">Assigning Transporter...</span>`;
 
+      // Status progress steps (1: Placed, 2: Farm Confirmed, 3: In Transit, 4: Delivered)
+      const isConfirmed = o.status === 'Confirmed' || o.status === 'In Transit' || o.status === 'Delivered';
+      const isInTransit = o.status === 'In Transit' || o.status === 'Delivered';
+      const isDelivered = o.status === 'Delivered';
+
+      const step1Class = 'completed';
+      const step2Class = isConfirmed ? (o.status === 'Confirmed' ? 'active' : 'completed') : '';
+      const step3Class = isInTransit ? (o.status === 'In Transit' ? 'active' : 'completed') : '';
+      const step4Class = isDelivered ? 'completed active' : '';
+
       return `
         <tr>
           <td><strong>#${o.id}</strong></td>
@@ -507,7 +550,29 @@
           <td><strong>₹${o.totalAmount}</strong></td>
           <td>${o.deliveryAddress}</td>
           <td>${transporterText}</td>
-          <td><span class="status-badge status-${statusClass}">${o.status}</span></td>
+          <td>
+            <span class="status-badge status-${statusClass}">${o.status}</span>
+            <div class="order-tracking-strip">
+              <div class="tracker-timeline">
+                <div class="tracker-node ${step1Class}">
+                  <div class="tracker-circle">✓</div>
+                  <div class="tracker-label">Placed</div>
+                </div>
+                <div class="tracker-node ${step2Class}">
+                  <div class="tracker-circle">${isConfirmed ? '✓' : '2'}</div>
+                  <div class="tracker-label">Farm Packed</div>
+                </div>
+                <div class="tracker-node ${step3Class}">
+                  <div class="tracker-circle">${isInTransit ? '🚚' : '3'}</div>
+                  <div class="tracker-label">In Transit</div>
+                </div>
+                <div class="tracker-node ${step4Class}">
+                  <div class="tracker-circle">${isDelivered ? '★' : '4'}</div>
+                  <div class="tracker-label">Delivered</div>
+                </div>
+              </div>
+            </div>
+          </td>
         </tr>
       `;
     }).join('');
@@ -519,6 +584,22 @@
   function renderTransporterHub() {
     const tbody = document.getElementById('transporter-trips-tbody');
     if (!tbody) return;
+
+    // Update Transporter Statistics
+    const availableGigs = STATE.orders.filter(o => o.status === 'Confirmed' && !o.transporterId).length;
+    const inTransit = STATE.orders.filter(o => o.status === 'In Transit').length;
+    const completed = STATE.orders.filter(o => o.status === 'Delivered').length;
+    const potentialEarnings = STATE.orders.reduce((acc, o) => acc + (o.deliveryFee || 80), 0);
+
+    const tStatEarn = document.getElementById('trans-stat-earnings');
+    const tStatAvail = document.getElementById('trans-stat-available');
+    const tStatTransit = document.getElementById('trans-stat-transit');
+    const tStatComp = document.getElementById('trans-stat-completed');
+
+    if (tStatEarn) tStatEarn.textContent = `₹${potentialEarnings}`;
+    if (tStatAvail) tStatAvail.textContent = availableGigs;
+    if (tStatTransit) tStatTransit.textContent = inTransit;
+    if (tStatComp) tStatComp.textContent = completed;
 
     if (STATE.orders.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--gray-500);">No transport trips available.</td></tr>`;
@@ -558,7 +639,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Market Insights Render
+  // Market Insights & Interactive AI Simulator
   // ---------------------------------------------------------------------------
   function renderInsights() {
     const rulesTbody = document.getElementById('insights-rules-tbody');
@@ -577,6 +658,64 @@
         </tr>
       `;
     }).join('');
+  }
+
+  function evaluateSimulator() {
+    const cropSelect = document.getElementById('sim-crop-select');
+    const supplySlider = document.getElementById('sim-supply-slider');
+    const supplyValText = document.getElementById('sim-supply-val');
+    const resDemand = document.getElementById('sim-res-demand');
+    const resPrice = document.getElementById('sim-res-price');
+    const resAdvantage = document.getElementById('sim-res-advantage');
+
+    if (!cropSelect || !supplySlider) return;
+
+    const cropKey = cropSelect.value;
+    const sliderVal = parseInt(supplySlider.value, 10);
+    const baseRule = AI_RULES[cropKey] || { crop: cropKey, baseMandiPrice: 20 };
+
+    const supplyLabels = {
+      1: "Severe Shortage (High Demand 🔥)",
+      2: "Low Arrivals (Deficit)",
+      3: "Normal / Balanced Arrivals",
+      4: "High Arrivals (Surplus)",
+      5: "Heavy Glut / Oversupply"
+    };
+
+    if (supplyValText) supplyValText.textContent = supplyLabels[sliderVal] || "Normal";
+
+    let demandLevel = "Medium";
+    let multiplier = 1.0;
+    let advantagePercent = 10;
+
+    if (sliderVal === 1) {
+      demandLevel = "High";
+      multiplier = 1.25;
+      advantagePercent = 22;
+    } else if (sliderVal === 2) {
+      demandLevel = "High";
+      multiplier = 1.15;
+      advantagePercent = 15;
+    } else if (sliderVal === 3) {
+      demandLevel = "Medium";
+      multiplier = 1.05;
+      advantagePercent = 10;
+    } else if (sliderVal === 4) {
+      demandLevel = "Low";
+      multiplier = 0.95;
+      advantagePercent = 6;
+    } else {
+      demandLevel = "Low";
+      multiplier = 0.90;
+      advantagePercent = 4;
+    }
+
+    const suggestedPrice = Math.round(baseRule.baseMandiPrice * multiplier);
+    const icon = demandLevel === 'High' ? '📈' : (demandLevel === 'Medium' ? '⚡' : '📉');
+
+    if (resDemand) resDemand.innerHTML = `${icon} ${demandLevel} Demand`;
+    if (resPrice) resPrice.textContent = `₹${suggestedPrice} / kg`;
+    if (resAdvantage) resAdvantage.textContent = `+${advantagePercent}% vs Mandi`;
   }
 
   // ---------------------------------------------------------------------------
@@ -629,9 +768,28 @@
     const crop = STATE.selectedCropForOrder;
     if (!crop) return;
 
-    const qty = parseInt(document.getElementById('order-quantity').value, 10) || 0;
-    const total = qty * crop.pricePerKg;
-    document.getElementById('order-total-calc').textContent = `₹${total}`;
+    let qty = parseInt(document.getElementById('order-quantity').value, 10) || 0;
+    if (qty < 1) qty = 1;
+    if (crop.quantity && qty > crop.quantity) qty = crop.quantity;
+
+    const subtotal = qty * crop.pricePerKg;
+    const deliveryFee = Math.round(40 + (qty * 1.5));
+    const savings = Math.round(subtotal * 0.25);
+    const total = subtotal + deliveryFee;
+
+    const elQty = document.getElementById('calc-qty-display');
+    const elRate = document.getElementById('calc-rate-display');
+    const elSub = document.getElementById('calc-subtotal-display');
+    const elFee = document.getElementById('calc-trans-fee-display');
+    const elSav = document.getElementById('calc-savings-display');
+    const elTot = document.getElementById('order-total-calc');
+
+    if (elQty) elQty.textContent = `${qty} kg`;
+    if (elRate) elRate.textContent = `₹${crop.pricePerKg}`;
+    if (elSub) elSub.textContent = `₹${subtotal}`;
+    if (elFee) elFee.textContent = `₹${deliveryFee}`;
+    if (elSav) elSav.textContent = `−₹${savings}`;
+    if (elTot) elTot.textContent = `₹${total}`;
   }
 
   function handleOrderSubmit(e) {
@@ -653,6 +811,10 @@
       return;
     }
 
+    const subtotal = qty * crop.pricePerKg;
+    const deliveryFee = Math.round(40 + (qty * 1.5));
+    const totalAmount = subtotal + deliveryFee;
+
     const orderId = `ORD-${Math.floor(100 + Math.random() * 900)}`;
 
     const newOrder = {
@@ -661,7 +823,9 @@
       cropName: crop.name,
       quantity: qty,
       unitPrice: crop.pricePerKg,
-      totalAmount: qty * crop.pricePerKg,
+      subtotalAmount: subtotal,
+      deliveryFee: deliveryFee,
+      totalAmount: totalAmount,
       farmerId: crop.farmerId,
       farmerName: crop.farmerName,
       farmerLocation: crop.location,
@@ -672,8 +836,7 @@
       status: "Confirmed", // Ready for transport
       transporterId: null,
       transporterName: null,
-      orderDate: new Date().toISOString().split('T')[0],
-      deliveryFee: Math.round(50 + (qty * 1.5))
+      orderDate: new Date().toISOString().split('T')[0]
     };
 
     // Deduct available crop stock
@@ -683,7 +846,7 @@
       STATE.offlineQueue.push({ type: 'ORDER', data: newOrder });
       showToast(`Saved offline: Order #${orderId}`);
     } else {
-      showToast(`Order #${orderId} placed successfully! From Farm to You.`);
+      showToast(`Order #${orderId} placed successfully! Direct from Farm to You.`);
     }
 
     STATE.orders.unshift(newOrder);
@@ -1017,6 +1180,16 @@
       });
     }
 
+    // Interactive Quick Filter Pills
+    document.querySelectorAll('#quick-filter-pills .filter-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#quick-filter-pills .filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        STATE.quickFilter = btn.getAttribute('data-filter');
+        renderMarketplace();
+      });
+    });
+
     // Order modal events
     const btnCloseModal = document.getElementById('btn-close-modal');
     const btnCancelOrder = document.getElementById('btn-cancel-order');
@@ -1025,6 +1198,62 @@
 
     const orderQtyInput = document.getElementById('order-quantity');
     if (orderQtyInput) orderQtyInput.addEventListener('input', recalcTotal);
+
+    // Interactive Quantity Stepper (+ / -)
+    const btnQtyMinus = document.getElementById('btn-qty-minus');
+    const btnQtyPlus = document.getElementById('btn-qty-plus');
+    if (btnQtyMinus && orderQtyInput) {
+      btnQtyMinus.addEventListener('click', () => {
+        const cur = parseInt(orderQtyInput.value, 10) || 0;
+        orderQtyInput.value = Math.max(1, cur - 5);
+        recalcTotal();
+      });
+    }
+    if (btnQtyPlus && orderQtyInput) {
+      btnQtyPlus.addEventListener('click', () => {
+        const max = STATE.selectedCropForOrder ? STATE.selectedCropForOrder.quantity : 9999;
+        const cur = parseInt(orderQtyInput.value, 10) || 0;
+        orderQtyInput.value = Math.min(max, cur + 5);
+        recalcTotal();
+      });
+    }
+
+    // Interactive Quantity Preset Pills (10kg, 25kg, 50kg, 100kg, Max)
+    document.querySelectorAll('.qty-preset-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        if (!STATE.selectedCropForOrder || !orderQtyInput) return;
+        const presetVal = pill.getAttribute('data-qty');
+        if (presetVal) {
+          const val = parseInt(presetVal, 10);
+          orderQtyInput.value = Math.min(STATE.selectedCropForOrder.quantity, val);
+        } else if (pill.id === 'btn-qty-max') {
+          orderQtyInput.value = STATE.selectedCropForOrder.quantity;
+        }
+        recalcTotal();
+      });
+    });
+
+    // Interactive AI Demand & Price Simulator
+    const simCrop = document.getElementById('sim-crop-select');
+    const simSlider = document.getElementById('sim-supply-slider');
+    if (simCrop) simCrop.addEventListener('change', evaluateSimulator);
+    if (simSlider) simSlider.addEventListener('input', evaluateSimulator);
+
+    // Smooth Floating Scroll-to-Top Button
+    const scrollTopBtn = document.getElementById('btn-scroll-top');
+    if (scrollTopBtn) {
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 160) {
+          scrollTopBtn.classList.add('visible');
+        } else {
+          scrollTopBtn.classList.remove('visible');
+        }
+      }, { passive: true });
+
+      scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     const formOrder = document.getElementById('form-order');
     if (formOrder) formOrder.addEventListener('submit', handleOrderSubmit);

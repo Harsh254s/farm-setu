@@ -181,6 +181,21 @@
         </select>
       </div>
 
+      <!-- Interactive Quick Filter Pills -->
+      <div class="quick-filter-pills" id="quick-filter-pills">
+        <button type="button" class="filter-pill active" data-filter="all">All Produce</button>
+        <button type="button" class="filter-pill" data-filter="High">🔥 High Demand</button>
+        <button type="button" class="filter-pill" data-filter="Medium">⚡ Medium Demand</button>
+        <button type="button" class="filter-pill" data-filter="Low">📉 Low Demand</button>
+        <button type="button" class="filter-pill" data-filter="under20">💰 Under ₹20 / kg</button>
+      </div>
+
+      <!-- Results Count Indicator -->
+      <div class="results-meta-bar">
+        <span id="market-results-count">Showing verified farm produce</span>
+        <span style="font-size:0.75rem; color:var(--gray-500);">⚡ Real-time Farm Feed</span>
+      </div>
+
       <!-- Crop Listings Cards Grid -->
       <div class="crops-grid" id="crops-grid-container">
         <!-- Rendered via JS -->
@@ -272,6 +287,26 @@
         <button class="btn btn-primary btn-sm" id="btn-farmer-new-listing">
           + Add New Harvest
         </button>
+      </div>
+
+      <!-- Live Farmer Metrics Bar -->
+      <div class="trans-stats-bar">
+        <div class="trans-stat-box">
+          <div class="title">Active Crops Listed</div>
+          <div class="val" id="farmer-stat-crops">3</div>
+        </div>
+        <div class="trans-stat-box">
+          <div class="title">Total Harvest Stock</div>
+          <div class="val" id="farmer-stat-stock">1,900 kg</div>
+        </div>
+        <div class="trans-stat-box">
+          <div class="title">Incoming Orders</div>
+          <div class="val" id="farmer-stat-orders" style="color:#2563eb;">2</div>
+        </div>
+        <div class="trans-stat-box">
+          <div class="title">Total Sales Revenue</div>
+          <div class="val" id="farmer-stat-revenue" style="color:var(--primary);">₹1,590</div>
+        </div>
       </div>
 
       <!-- Incoming Orders from Consumers -->
@@ -376,6 +411,26 @@
         </div>
       </div>
 
+      <!-- Live Transporter Metrics Bar -->
+      <div class="trans-stats-bar">
+        <div class="trans-stat-box">
+          <div class="title">Total Potential Earnings</div>
+          <div class="val" id="trans-stat-earnings" style="color:var(--primary);">₹200</div>
+        </div>
+        <div class="trans-stat-box">
+          <div class="title">Available Delivery Gigs</div>
+          <div class="val" id="trans-stat-available">1</div>
+        </div>
+        <div class="trans-stat-box">
+          <div class="title">Trips In Transit</div>
+          <div class="val" id="trans-stat-transit" style="color:#7c3aed;">1</div>
+        </div>
+        <div class="trans-stat-box">
+          <div class="title">Completed Deliveries</div>
+          <div class="val" id="trans-stat-completed" style="color:#15803d;">0</div>
+        </div>
+      </div>
+
       <div class="table-card">
         <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
           Available &amp; Assigned Delivery Trips (From Farm to You)
@@ -432,6 +487,59 @@
         </div>
       </div>
 
+      <!-- Interactive AI Market Simulator Card -->
+      <div class="sim-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h3 style="font-size:1.05rem; color:var(--gray-900); font-weight:700;">🤖 Interactive AI Demand &amp; Price Simulator</h3>
+            <p style="font-size:0.82rem; color:var(--gray-600); margin-top:2px;">Simulate how mandi arrival volumes and supply shocks dynamically shift AI pricing and farmer margins.</p>
+          </div>
+          <span style="font-size:0.75rem; background:var(--primary-light); color:var(--primary); padding:3px 8px; border-radius:4px; font-weight:700; border:1px solid var(--primary-border);">
+            Live Rule Engine
+          </span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:16px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="sim-crop-select">Select Produce Crop:</label>
+            <select id="sim-crop-select" class="form-select">
+              <option value="tomato">Tomato (Solanum lycopersicum)</option>
+              <option value="onion">Onion (Allium cepa)</option>
+              <option value="potato">Potato (Solanum tuberosum)</option>
+              <option value="wheat">Wheat (Triticum aestivum)</option>
+              <option value="rice">Rice (Oryza sativa)</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="sim-supply-slider">
+              Simulated Market Arrivals / Supply: 
+              <span id="sim-supply-val" style="font-weight:700; color:var(--primary);">Low (Deficit)</span>
+            </label>
+            <div class="sim-slider-row">
+              <span style="font-size:0.72rem; color:var(--gray-500); font-weight:600;">Shortage</span>
+              <input type="range" id="sim-supply-slider" class="sim-slider" min="1" max="5" value="2" step="1">
+              <span style="font-size:0.72rem; color:var(--gray-500); font-weight:600;">Surplus</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-result-box" id="sim-result-box">
+          <div>
+            <div style="font-size:0.76rem; color:var(--gray-600); text-transform:uppercase; font-weight:600;">AI Forecasted Demand</div>
+            <div style="font-size:1.25rem; font-weight:800; color:var(--gray-900); margin-top:2px;" id="sim-res-demand">📈 High Demand</div>
+          </div>
+          <div>
+            <div style="font-size:0.76rem; color:var(--gray-600); text-transform:uppercase; font-weight:600;">Suggested Direct Price</div>
+            <div style="font-size:1.25rem; font-weight:800; color:var(--primary); margin-top:2px;" id="sim-res-price">₹22 / kg</div>
+          </div>
+          <div>
+            <div style="font-size:0.76rem; color:var(--gray-600); text-transform:uppercase; font-weight:600;">Farmer Profit Premium</div>
+            <div style="font-size:1.25rem; font-weight:800; color:#15803d; margin-top:2px;" id="sim-res-advantage">+15.8% vs Mandi</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Demand Forecasting Table -->
       <div class="table-card">
         <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
@@ -480,7 +588,18 @@
 
         <div class="form-group">
           <label class="form-label" for="order-quantity">Quantity to Order (kg)</label>
-          <input type="number" id="order-quantity" class="form-input" min="1" value="20" required>
+          <div class="qty-stepper-row">
+            <button type="button" class="qty-step-btn" id="btn-qty-minus" title="Decrease by 5 kg">−</button>
+            <input type="number" id="order-quantity" class="form-input" min="1" value="20" style="text-align:center; font-weight:700; font-size:1.05rem;" required>
+            <button type="button" class="qty-step-btn" id="btn-qty-plus" title="Increase by 5 kg">+</button>
+          </div>
+          <div class="qty-presets-bar">
+            <button type="button" class="qty-preset-pill" data-qty="10">10 kg</button>
+            <button type="button" class="qty-preset-pill" data-qty="25">25 kg</button>
+            <button type="button" class="qty-preset-pill" data-qty="50">50 kg</button>
+            <button type="button" class="qty-preset-pill" data-qty="100">100 kg</button>
+            <button type="button" class="qty-preset-pill" id="btn-qty-max">Max Stock</button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -488,10 +607,24 @@
           <input type="text" id="order-address" class="form-input" value="Indiranagar, Bengaluru" required>
         </div>
 
-        <div
-          style="display:flex; justify-content:space-between; align-items:center; margin:16px 0; padding-top:10px; border-top:1px solid var(--gray-200); font-weight:700;">
-          <span>Total Payable:</span>
-          <span style="font-size:1.25rem; color:var(--gray-900);" id="order-total-calc">₹440</span>
+        <!-- Transparent Live Pricing Breakdown Card -->
+        <div class="order-cost-card">
+          <div class="cost-line">
+            <span>Produce Subtotal (<span id="calc-qty-display">20 kg</span> × <span id="calc-rate-display">₹22</span>):</span>
+            <span id="calc-subtotal-display">₹440</span>
+          </div>
+          <div class="cost-line">
+            <span>Direct Delivery Fee (Vikram's Mini Truck):</span>
+            <span id="calc-trans-fee-display">₹80</span>
+          </div>
+          <div class="cost-line savings">
+            <span>Middleman Markup Saved:</span>
+            <span id="calc-savings-display">−₹110</span>
+          </div>
+          <div class="cost-line total-line">
+            <span>Total Payable:</span>
+            <span id="order-total-calc">₹520</span>
+          </div>
         </div>
 
         <div style="display:flex; gap:10px;">
@@ -505,6 +638,11 @@
       </form>
     </div>
   </div>
+
+  <!-- Smooth Floating Scroll-to-Top Button -->
+  <button id="btn-scroll-top" class="scroll-top-btn" title="Smooth scroll to top">
+    ↑
+  </button>
 
   <!-- Toast Notification -->
   <div class="toast-msg" id="toast-msg"></div>
