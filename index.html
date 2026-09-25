@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FarmSetu - From Farm to You</title>
+  <meta name="description"
+    content="FarmSetu: Connecting farmers directly with consumers and transport workers. From Farm to You.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Offline Warning Banner -->
+  <div class="offline-bar" id="offline-bar">
+    <span>⚠️ <strong>Offline Mode (Simulated):</strong> Working locally. Data will sync when you go back online.</span>
+    <button class="btn btn-secondary btn-sm" id="btn-sync-online" style="padding:2px 8px; font-size:0.75rem;">Sync
+      Now</button>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <!-- Brand Logo (FarmSetu written together with NO space, Subtitle: From Farm to You) -->
+      <a class="brand-wrap" id="brand-home-btn" title="FarmSetu - From Farm to You">
+        <span class="brand-title">🌱 FarmSetu</span>
+        <span class="brand-subtitle">From Farm to You</span>
+      </a>
+
+      <!-- Navigation Links (Shown only when logged in) -->
+      <nav class="header-nav" id="main-nav-links" style="display:none;">
+        <button class="nav-btn" data-view="farmer" id="nav-farmer-hub" style="display:none;">🧑🌾 Farmer Hub</button>
+        <button class="nav-btn" data-view="add-crop" id="nav-add-crop" style="display:none;">➕ Add Crop</button>
+        <button class="nav-btn" data-view="marketplace" id="nav-marketplace">🏪 Marketplace</button>
+        <button class="nav-btn" data-view="consumer" id="nav-consumer-hub" style="display:none;">🛒 My Orders</button>
+        <button class="nav-btn" data-view="transporter" id="nav-transporter-hub" style="display:none;">🚚 Delivery Trips</button>
+        <button class="nav-btn" data-view="insights" id="nav-insights">📊 Market Insights</button>
+      </nav>
+
+      <!-- User Session & Controls -->
+      <div class="user-controls">
+        <!-- Role / User indicator -->
+        <span class="user-badge" id="current-user-badge" style="display:none;"></span>
+
+        <!-- Logout Button (Shown when logged in) -->
+        <button class="btn btn-secondary btn-sm" id="btn-logout" style="display:none;" title="Log out of FarmSetu">
+          🚪 Log Out
+        </button>
+
+        <!-- Basic Offline Toggle -->
+        <button class="btn btn-secondary btn-sm" id="btn-toggle-offline" title="Simulate rural offline mode">
+          <span id="offline-status-text">Online</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="main-wrapper">
+
+    <!-- =======================================================================
+         VIEW 1: AUTH / LOGIN & SIGN UP PAGE (DEFAULT HOMEPAGE)
+         ======================================================================= -->
+    <section class="view-section active" id="view-auth">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo-badge">🌱</div>
+          <h2>Sign in to FarmSetu</h2>
+          <p>Connecting fresh produce <strong>From Farm to You</strong></p>
+        </div>
+
+        <!-- 3-Role Segmented Selector -->
+        <div class="role-selector-wrap">
+          <span class="role-label">Select your role:</span>
+          <div class="role-segmented-control">
+            <button type="button" class="role-seg-btn selected" data-role="farmer" id="role-btn-farmer">
+              🧑🌾 Farmer
+            </button>
+            <button type="button" class="role-seg-btn" data-role="consumer" id="role-btn-consumer">
+              🛒 Consumer
+            </button>
+            <button type="button" class="role-seg-btn" data-role="transporter" id="role-btn-transporter">
+              🚚 Transporter
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabs: Sign In / Create Account -->
+        <div class="auth-tabs-bar">
+          <button type="button" class="auth-tab-btn active" id="tab-login-btn">Sign In</button>
+          <button type="button" class="auth-tab-btn" id="tab-signup-btn">Create Account</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="form-login">
+          <div class="form-group">
+            <label class="form-label" for="login-phone">Mobile Number</label>
+            <input type="tel" id="login-phone" class="form-input" placeholder="Enter registered mobile number" required autocomplete="tel">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; margin-top:4px;" id="btn-submit-login">
+            Sign In as <span id="login-role-label">Farmer</span>
+          </button>
+          <p class="auth-bottom-switch">
+            New to FarmSetu? <a href="#" id="link-goto-signup">Create an account</a>
+          </p>
+        </form>
+
+        <!-- SIGN UP FORM -->
+        <form id="form-signup" style="display:none;">
+          <div class="form-group">
+            <label class="form-label" for="signup-name">Full Name</label>
+            <input type="text" id="signup-name" class="form-input" placeholder="Enter your full name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-phone">Mobile Number</label>
+            <input type="tel" id="signup-phone" class="form-input" placeholder="Enter 10-digit mobile number" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-location">City / Village Location</label>
+            <input type="text" id="signup-location" class="form-input" placeholder="e.g. Kolar, Karnataka" required>
+          </div>
+
+          <!-- Dynamic role-specific field -->
+          <div class="form-group" id="signup-extra-group">
+            <label class="form-label" id="signup-extra-label" for="signup-extra-field">Farm / Mandi Location</label>
+            <input type="text" id="signup-extra-field" class="form-input" placeholder="e.g. Kolar Mandi Area">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="signup-password">Create Password</label>
+            <input type="password" id="signup-password" class="form-input" placeholder="Create a password" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; margin-top:4px;">
+            Create Account &amp; Sign In
+          </button>
+          <p class="auth-bottom-switch">
+            Already have an account? <a href="#" id="link-goto-login">Sign in</a>
+          </p>
+        </form>
+
+        <!-- Test Account Hint Box -->
+        <div class="auth-test-accounts-hint">
+          <strong>Default Accounts for Testing:</strong>
+          <div>🧑🌾 Farmer: <code>9876543210</code> &bull; Password: <code>123</code></div>
+          <div>🛒 Consumer: <code>9123456780</code> &bull; Password: <code>123</code></div>
+          <div>🚚 Transporter: <code>9988776655</code> &bull; Password: <code>123</code></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 2: MARKETPLACE (FROM FARM TO YOU)
+         ======================================================================= -->
+    <section class="view-section" id="view-marketplace">
+      <div class="section-header">
+        <div>
+          <h2>Marketplace: From Farm to You</h2>
+          <p>Direct fresh produce from verified farmers. No middleman markups.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-market-add-crop" style="display:none;">
+          ➕ List New Crop
+        </button>
+      </div>
+
+      <!-- Simple Filter Bar -->
+      <div class="filter-box">
+        <input type="text" id="market-search" class="form-input search-field"
+          placeholder="Search crops (e.g. Tomato, Potato, Onion)...">
+
+        <select id="market-demand-filter" class="form-select" style="width:auto; min-width:180px;">
+          <option value="all">All Demand Levels</option>
+          <option value="High">📈 High Demand Only</option>
+          <option value="Medium">⚡ Medium Demand</option>
+          <option value="Low">📉 Low Demand</option>
+        </select>
+      </div>
+
+      <!-- Crop Listings Cards Grid -->
+      <div class="crops-grid" id="crops-grid-container">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 3: ADD CROP PAGE (WITH AI PRICE SUGGESTION)
+         ======================================================================= -->
+    <section class="view-section" id="view-add-crop">
+      <div class="section-header">
+        <div>
+          <h2>List Crop for Sale</h2>
+          <p>Add your harvested produce directly to the marketplace.</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <!-- Live AI Price Suggestion Callout -->
+        <div class="ai-suggestion-box" id="ai-suggestion-box">
+          <div class="ai-suggestion-text">
+            <strong>💡 AI Price Insight:</strong>
+            <span id="ai-suggested-text">Recommended Price: ₹22/kg (based on High Demand)</span>
+            <p id="ai-logic-note">High Demand: Suggested price is +15% above traditional mandi wholesale.</p>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-apply-ai-price">
+            Apply Suggested Price
+          </button>
+        </div>
+
+        <form id="form-add-crop">
+          <div class="form-group">
+            <label class="form-label" for="add-crop-name">Crop Name</label>
+            <input type="text" id="add-crop-name" class="form-input" list="crop-name-suggestions"
+              placeholder="e.g. Tomato, Potato, Onion" required>
+            <datalist id="crop-name-suggestions">
+              <option value="Tomato">
+              <option value="Potato">
+              <option value="Onion">
+              <option value="Wheat">
+              <option value="Rice">
+            </datalist>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group">
+              <label class="form-label" for="add-crop-qty">Quantity (kg)</label>
+              <input type="number" id="add-crop-qty" class="form-input" placeholder="e.g. 500" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="add-crop-price">Price per kg (₹)</label>
+              <input type="number" id="add-crop-price" class="form-input" placeholder="e.g. 22" min="1" step="0.5"
+                required>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group">
+              <label class="form-label" for="add-crop-location">Location / Village / Mandi</label>
+              <input type="text" id="add-crop-location" class="form-input" placeholder="e.g. Kolar" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="add-crop-harvest-date">Harvest Date</label>
+              <input type="date" id="add-crop-harvest-date" class="form-input" required>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; margin-top:16px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;">
+              Publish Crop Listing
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-cancel-add-crop">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 4: FARMER DASHBOARD & ORDERS
+         ======================================================================= -->
+    <section class="view-section" id="view-farmer">
+      <div class="section-header">
+        <div>
+          <h2>🧑🌾 Farmer Hub - <span id="farmer-name-display">Ramesh Kumar</span></h2>
+          <p>Manage your crop inventory and incoming orders from consumers.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-farmer-new-listing">
+          + Add New Harvest
+        </button>
+      </div>
+
+      <!-- Incoming Orders from Consumers -->
+      <div class="table-card">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
+          Incoming Consumer Orders
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order Ref</th>
+                <th>Crop</th>
+                <th>Consumer</th>
+                <th>Quantity</th>
+                <th>Total Value</th>
+                <th>Delivery Address</th>
+                <th>Status</th>
+                <th>Farmer Action</th>
+              </tr>
+            </thead>
+            <tbody id="farmer-orders-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- My Active Crop Listings -->
+      <div class="table-card">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
+          My Active Crop Listings
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Crop</th>
+                <th>Stock Available</th>
+                <th>Price / kg</th>
+                <th>Location</th>
+                <th>Harvest Date</th>
+                <th>Demand Indicator</th>
+              </tr>
+            </thead>
+            <tbody id="farmer-crops-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 5: CONSUMER DASHBOARD & ORDERS
+         ======================================================================= -->
+    <section class="view-section" id="view-consumer">
+      <div class="section-header">
+        <div>
+          <h2>🛒 Consumer Orders - <span id="consumer-name-display">Priya Sharma</span></h2>
+          <p>Track your fresh produce shipments ordered directly from farmers.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-consumer-browse">
+          Browse Marketplace
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
+          My Order History &amp; Delivery Tracking
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Crop Ordered</th>
+                <th>Farmer</th>
+                <th>Quantity</th>
+                <th>Total Paid</th>
+                <th>Delivery Address</th>
+                <th>Assigned Transporter</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="consumer-orders-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 6: TRANSPORT WORKER DASHBOARD (NEW!)
+         ======================================================================= -->
+    <section class="view-section" id="view-transporter">
+      <div class="section-header">
+        <div>
+          <h2>🚚 Transport Worker Dashboard - <span id="transporter-name-display">Vikram Singh</span></h2>
+          <p>Pick up crops from farms and deliver directly to consumers. Earn per delivery trip.</p>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
+          Available &amp; Assigned Delivery Trips (From Farm to You)
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Trip Ref</th>
+                <th>Produce &amp; Weight</th>
+                <th>Farm Pickup (Origin)</th>
+                <th>Home Delivery (Destination)</th>
+                <th>Trip Earning</th>
+                <th>Current Status</th>
+                <th>Transporter Action</th>
+              </tr>
+            </thead>
+            <tbody id="transporter-trips-tbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 7: MARKET INSIGHTS PANEL (AI FEATURES)
+         ======================================================================= -->
+    <section class="view-section" id="view-insights">
+      <div class="section-header">
+        <div>
+          <h2>📊 Market Insights &amp; Demand Panel</h2>
+          <p>Lightweight AI insights on demand forecasts and price trends.</p>
+        </div>
+      </div>
+
+      <!-- Basic Metric Cards -->
+      <div class="insights-grid">
+        <div class="insight-metric-card">
+          <h4>Top Demanded Crop</h4>
+          <div class="metric-val" id="insight-top-crop">Tomato</div>
+          <div class="metric-sub">📈 High Demand (+15%)</div>
+        </div>
+        <div class="insight-metric-card">
+          <h4>Average Market Price</h4>
+          <div class="metric-val" id="insight-avg-price">₹22/kg</div>
+          <div class="metric-sub">Fair price range</div>
+        </div>
+        <div class="insight-metric-card">
+          <h4>High Demand Areas</h4>
+          <div class="metric-val" style="font-size:1.1rem; line-height:1.4;" id="insight-areas">Delhi, Lucknow,
+            Bengaluru</div>
+          <div class="metric-sub">Active consumption hubs</div>
+        </div>
+      </div>
+
+      <!-- Demand Forecasting Table -->
+      <div class="table-card">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
+          Demand Prediction Rules &amp; Price Suggestions
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Crop Name</th>
+                <th>Demand Indicator</th>
+                <th>Wholesale Mandi Base</th>
+                <th>Recommended Direct Price</th>
+                <th>AI Pricing Logic</th>
+              </tr>
+            </thead>
+            <tbody id="insights-rules-tbody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       MODAL: ORDER PRODUCE (FOR CONSUMER)
+       ========================================================================= -->
+  <div class="modal-overlay" id="order-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-crop-title">Order Fresh Crop</h3>
+        <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+      </div>
+      <form id="form-order">
+        <div
+          style="margin-bottom:14px; padding:10px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--border-radius);">
+          <div style="font-weight:700; font-size:1.05rem;" id="modal-crop-name">Tomato</div>
+          <div style="font-size:0.85rem; color:var(--gray-600);" id="modal-farmer-info">Farmer: Ramesh Kumar &bull;
+            Kolar</div>
+          <div style="font-size:0.9rem; font-weight:600; color:var(--primary); margin-top:4px;" id="modal-crop-price">
+            Price: ₹22/kg</div>
+          <div style="font-size:0.8rem; color:var(--gray-500);" id="modal-crop-stock">Available: 500 kg</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="order-quantity">Quantity to Order (kg)</label>
+          <input type="number" id="order-quantity" class="form-input" min="1" value="20" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="order-address">Home Delivery Address</label>
+          <input type="text" id="order-address" class="form-input" value="Indiranagar, Bengaluru" required>
+        </div>
+
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin:16px 0; padding-top:10px; border-top:1px solid var(--gray-200); font-weight:700;">
+          <span>Total Payable:</span>
+          <span style="font-size:1.25rem; color:var(--gray-900);" id="order-total-calc">₹440</span>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button type="submit" class="btn btn-primary" style="flex:1;">
+            Confirm &amp; Place Order
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-cancel-order">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-msg" id="toast-msg"></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
