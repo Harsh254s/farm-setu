@@ -358,6 +358,34 @@
           </table>
         </div>
       </div>
+
+      <!-- Farmer Dedicated AI Mandi Pricing & Guidance Section -->
+      <div class="table-card">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-weight:700; color:var(--gray-900);">🤖 Farmer AI Mandi Benchmark &amp; Price Suggestions</div>
+            <p style="font-size:0.8rem; color:var(--gray-500); margin-top:2px;">Compare APMC wholesale floor rates with recommended FarmSetu direct prices to maximize your harvest payout.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-farmer-list-ai" onclick="window.farmSetu.switchView('add-crop')">➕ List Crop with AI Price</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Crop Name</th>
+                <th>Demand Indicator</th>
+                <th>Wholesale Mandi Base Rate</th>
+                <th>Recommended Direct Price</th>
+                <th>Farmer Profit Premium</th>
+                <th>AI Pricing Guidance</th>
+              </tr>
+            </thead>
+            <tbody id="farmer-mandi-rules-tbody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- =======================================================================
@@ -457,17 +485,31 @@
     </section>
 
     <!-- =======================================================================
-         VIEW 7: MARKET INSIGHTS PANEL (AI FEATURES)
+         VIEW 7: MARKET INSIGHTS PANEL (AI FEATURES & INTERACTIVE CHARTS)
          ======================================================================= -->
     <section class="view-section" id="view-insights">
       <div class="section-header">
         <div>
           <h2>📊 Market Insights &amp; Demand Panel</h2>
-          <p>Lightweight AI insights on demand forecasts and price trends.</p>
+          <p>Lightweight AI insights on demand forecasts, real-time price trends, and direct farm economics.</p>
         </div>
       </div>
 
-      <!-- Basic Metric Cards -->
+      <!-- Interactive Perspective Switcher: Consumer Savings vs Farmer Profit -->
+      <div class="perspective-toggle-strip">
+        <span class="perspective-label">Viewing Lens:</span>
+        <div class="perspective-pills-wrap" id="perspective-pills-wrap">
+          <button type="button" class="persp-pill active" data-persp="consumer" id="pill-persp-consumer">
+            🛒 Consumer View: Direct Savings vs Retail Store
+          </button>
+          <button type="button" class="persp-pill" data-persp="farmer" id="pill-persp-farmer">
+            🧑🌾 Farmer View: Payout vs Wholesale Mandi Base
+          </button>
+        </div>
+        <span class="persp-badge" id="persp-active-badge">🛒 Consumer Mode</span>
+      </div>
+
+      <!-- Top Summary Metric Cards -->
       <div class="insights-grid">
         <div class="insight-metric-card">
           <h4>Top Demanded Crop</h4>
@@ -477,13 +519,136 @@
         <div class="insight-metric-card">
           <h4>Average Market Price</h4>
           <div class="metric-val" id="insight-avg-price">₹22/kg</div>
-          <div class="metric-sub">Fair price range</div>
+          <div class="metric-sub">Fair direct price range</div>
         </div>
         <div class="insight-metric-card">
           <h4>High Demand Areas</h4>
-          <div class="metric-val" style="font-size:1.1rem; line-height:1.4;" id="insight-areas">Delhi, Lucknow,
-            Bengaluru</div>
+          <div class="metric-val" style="font-size:1.08rem; line-height:1.4;" id="insight-areas">Delhi, Lucknow, Bengaluru</div>
           <div class="metric-sub">Active consumption hubs</div>
+        </div>
+        <div class="insight-metric-card highlight-card" id="card-dynamic-role-metric">
+          <h4 id="insight-dynamic-title">Direct Buyer Savings</h4>
+          <div class="metric-val" style="color:var(--primary);" id="insight-dynamic-val">₹11 / kg (33%)</div>
+          <div class="metric-sub" style="color:#15803d;" id="insight-dynamic-sub">Cheaper than supermarket retail</div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           FEATURED: INTERACTIVE PRICE TREND & MANDI ARBITRAGE CHART
+           ===================================================================== -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-header-title-row">
+              <h3>📈 Price Trend &amp; Mandi Arbitrage Comparison</h3>
+              <span class="live-pill-tag">
+                <span class="live-ping-dot"></span> Live Market Feed
+              </span>
+            </div>
+            <p class="chart-subtitle">Compare traditional Wholesale Mandi rates, FarmSetu direct farmer prices, and middleman supermarket retail markups.</p>
+          </div>
+
+          <!-- Controls: Produce Selector & Timeframe Pills -->
+          <div class="chart-controls-bar">
+            <div class="chart-select-wrap">
+              <label for="trend-crop-select" class="chart-control-label">Produce:</label>
+              <select id="trend-crop-select" class="form-select chart-crop-select">
+                <option value="tomato">🍅 Tomato</option>
+                <option value="onion">🧅 Onion</option>
+                <option value="potato">🥔 Potato</option>
+                <option value="wheat">🌾 Wheat</option>
+                <option value="rice">🍚 Rice</option>
+              </select>
+            </div>
+
+            <div class="timeframe-pills" id="trend-timeframe-pills">
+              <button type="button" class="timeframe-pill active" data-days="7">7 Days</button>
+              <button type="button" class="timeframe-pill" data-days="14">14 Days</button>
+              <button type="button" class="timeframe-pill" data-days="30">30 Days</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Live Stats Ribbon -->
+        <div class="chart-stats-banner">
+          <div class="stat-banner-item">
+            <span class="lbl">🌱 FarmSetu Direct Farmer Price</span>
+            <span class="val green" id="trend-stat-direct">₹22 / kg</span>
+            <span class="sub" id="trend-stat-premium">+15.8% vs Mandi Base</span>
+          </div>
+          <div class="stat-banner-item">
+            <span class="lbl">🟣 Wholesale Mandi Base Rate</span>
+            <span class="val slate" id="trend-stat-mandi">₹19 / kg</span>
+            <span class="sub">Traditional APMC Yard Auction</span>
+          </div>
+          <div class="stat-banner-item">
+            <span class="lbl">🟠 Supermarket / Retail Price</span>
+            <span class="val orange" id="trend-stat-retail">₹33 / kg</span>
+            <span class="sub">Includes 40-50% Middleman Cut</span>
+          </div>
+          <div class="stat-banner-item">
+            <span class="lbl">💰 Consumer Direct Savings</span>
+            <span class="val text-primary" id="trend-stat-savings">₹11 / kg (33% Saved)</span>
+            <span class="sub" id="trend-stat-status">Deficit Shortage (High Demand 🔥)</span>
+          </div>
+        </div>
+
+        <!-- Responsive Interactive SVG Canvas Area -->
+        <div class="chart-svg-container" id="chart-svg-container">
+          <svg id="price-trend-svg" class="price-trend-svg" viewBox="0 0 760 280" preserveAspectRatio="none">
+            <!-- Rendered smoothly via JS -->
+          </svg>
+          <div id="chart-tooltip" class="chart-tooltip"></div>
+        </div>
+
+        <!-- Interactive Legend with Click-to-Toggle Series -->
+        <div class="chart-legend-bar">
+          <button type="button" class="legend-btn active" data-series="direct" id="legend-btn-direct" title="Toggle FarmSetu Direct curve">
+            <span class="legend-dot dot-direct"></span>
+            <span class="legend-text"><strong>🌱 FarmSetu Direct Payout</strong> (Recommended)</span>
+          </button>
+          <button type="button" class="legend-btn active" data-series="mandi" id="legend-btn-mandi" title="Toggle Wholesale Mandi curve">
+            <span class="legend-dot dot-mandi"></span>
+            <span class="legend-text"><strong>🟣 Wholesale Mandi Base</strong></span>
+          </button>
+          <button type="button" class="legend-btn active" data-series="retail" id="legend-btn-retail" title="Toggle Supermarket Retail curve">
+            <span class="legend-dot dot-retail"></span>
+            <span class="legend-text"><strong>🟠 Middleman Retail Markup</strong></span>
+          </button>
+          <div class="chart-legend-hint">💡 Hover over data points for detailed price spread &amp; savings</div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           DUAL SECTION: DEMAND VS ARRIVAL VOLUME & REGIONAL MARKET DISPARITY
+           ===================================================================== -->
+      <div class="insights-dual-grid">
+        <!-- Crop Demand Index & Mandi Arrival Volume -->
+        <div class="dual-card">
+          <div class="dual-card-header">
+            <div>
+              <h4>🌾 Produce Demand &amp; Mandi Arrival Volume</h4>
+              <p>Consumer purchase velocity vs physical mandi arrivals.</p>
+            </div>
+            <span class="dual-badge">Cross-Crop Index</span>
+          </div>
+          <div class="demand-bars-container" id="demand-bars-container">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- Regional Market Disparity & Arbitrage Intelligence -->
+        <div class="dual-card">
+          <div class="dual-card-header">
+            <div>
+              <h4>📍 Regional Consumption Hubs &amp; Mandi Arbitrage</h4>
+              <p>Direct farm savings compared across key metropolitan regions.</p>
+            </div>
+            <span class="dual-badge">Active Hubs</span>
+          </div>
+          <div class="regional-cards-list" id="regional-cards-list">
+            <!-- Rendered dynamically via JS -->
+          </div>
         </div>
       </div>
 
@@ -534,27 +699,27 @@
             <div style="font-size:1.25rem; font-weight:800; color:var(--primary); margin-top:2px;" id="sim-res-price">₹22 / kg</div>
           </div>
           <div>
-            <div style="font-size:0.76rem; color:var(--gray-600); text-transform:uppercase; font-weight:600;">Farmer Profit Premium</div>
-            <div style="font-size:1.25rem; font-weight:800; color:#15803d; margin-top:2px;" id="sim-res-advantage">+15.8% vs Mandi</div>
+            <div style="font-size:0.76rem; color:var(--gray-600); text-transform:uppercase; font-weight:600;" id="sim-advantage-lbl">Consumer Direct Savings</div>
+            <div style="font-size:1.25rem; font-weight:800; color:#15803d; margin-top:2px;" id="sim-res-advantage">Save 33% vs Retail</div>
           </div>
         </div>
       </div>
 
-      <!-- Demand Forecasting Table -->
-      <div class="table-card">
-        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); font-weight:700;">
-          Demand Prediction Rules &amp; Price Suggestions
+      <!-- Demand Forecasting & Price Comparison Table (Role-Adaptive) -->
+      <div class="table-card" style="margin-top:24px;">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--gray-200); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-weight:700; font-size:0.95rem; color:var(--gray-900);" id="insights-table-title">Direct Farm Savings vs Retail Supermarket Rates</div>
+            <p id="insights-table-subtitle" style="font-size:0.8rem; color:var(--gray-500); margin-top:2px;">Showing how buying direct from verified farmers saves you money compared to retail supermarket markup.</p>
+          </div>
+          <span class="badge-pill" id="insights-table-badge" style="font-size:0.75rem; background:var(--primary-light); color:var(--primary); padding:3px 9px; border-radius:4px; font-weight:700; border:1px solid var(--primary-border);">
+            🛒 Consumer Savings Lens
+          </span>
         </div>
         <div style="overflow-x:auto;">
           <table class="data-table">
-            <thead>
-              <tr>
-                <th>Crop Name</th>
-                <th>Demand Indicator</th>
-                <th>Wholesale Mandi Base</th>
-                <th>Recommended Direct Price</th>
-                <th>AI Pricing Logic</th>
-              </tr>
+            <thead id="insights-rules-thead">
+              <!-- Dynamically populated based on Consumer vs Farmer view -->
             </thead>
             <tbody id="insights-rules-tbody">
               <!-- Populated by JS -->

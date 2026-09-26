@@ -833,8 +833,73 @@ body {
 }
 
 /* ==========================================================================
-   MARKET INSIGHTS & INTERACTIVE SIMULATOR
+   MARKET INSIGHTS & INTERACTIVE SIMULATOR (ROLE-ADAPTIVE)
    ========================================================================== */
+.perspective-toggle-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.perspective-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.perspective-pills-wrap {
+  display: flex;
+  background: var(--gray-100);
+  border-radius: 6px;
+  padding: 3px;
+  border: 1px solid var(--gray-200);
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.persp-pill {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  user-select: none;
+}
+
+.persp-pill:hover {
+  color: var(--gray-900);
+}
+
+.persp-pill.active {
+  background: #ffffff;
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.persp-badge {
+  margin-left: auto;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--primary-border);
+}
+
 .insights-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -867,6 +932,571 @@ body {
   font-size: 0.78rem;
   color: var(--primary);
   margin-top: 2px;
+}
+
+.insight-metric-card.highlight-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border-color: #bbf7d0;
+}
+
+/* ==========================================================================
+   FEATURED: INTERACTIVE PRICE TREND & MANDI ARBITRAGE CHART
+   ========================================================================== */
+.chart-card {
+  background: #ffffff;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.chart-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chart-header-title-row h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.live-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.live-ping-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+  animation: pulseDot 1.8s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.35);
+  }
+}
+
+.chart-subtitle {
+  font-size: 0.83rem;
+  color: var(--gray-600);
+  margin-top: 4px;
+}
+
+.chart-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chart-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-control-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+
+.chart-crop-select {
+  padding: 6px 12px;
+  font-size: 0.86rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid var(--gray-300);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.timeframe-pills {
+  display: flex;
+  background: var(--gray-100);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid var(--gray-200);
+}
+
+.timeframe-pill {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.timeframe-pill:hover {
+  color: var(--gray-900);
+}
+
+.timeframe-pill.active {
+  background: #ffffff;
+  color: var(--gray-900);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+/* Dynamic Live Stats Ribbon */
+.chart-stats-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.stat-banner-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-banner-item .lbl {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--gray-600);
+}
+
+.stat-banner-item .val {
+  font-size: 1.28rem;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.stat-banner-item .val.green {
+  color: #15803d;
+}
+
+.stat-banner-item .val.slate {
+  color: #6366f1;
+}
+
+.stat-banner-item .val.orange {
+  color: #ea580c;
+}
+
+.stat-banner-item .sub {
+  font-size: 0.74rem;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+/* SVG Chart Container */
+.chart-svg-container {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  margin-bottom: 14px;
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: visible;
+}
+
+.price-trend-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* SVG Elements Styling */
+.chart-grid-line {
+  stroke: var(--gray-200);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-axis-label {
+  fill: var(--gray-500);
+  font-size: 11px;
+  font-family: inherit;
+  user-select: none;
+}
+
+.chart-curve-direct {
+  fill: none;
+  stroke: #15803d;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity 0.2s ease;
+}
+
+.chart-curve-mandi {
+  fill: none;
+  stroke: #6366f1;
+  stroke-width: 2.2;
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity 0.2s ease;
+}
+
+.chart-curve-retail {
+  fill: none;
+  stroke: #ea580c;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity 0.2s ease;
+}
+
+.chart-area-fill {
+  transition: opacity 0.2s ease;
+}
+
+.chart-dot {
+  cursor: pointer;
+  transition: r 0.15s ease, stroke-width 0.15s ease;
+}
+
+.chart-dot:hover {
+  r: 6.5;
+  stroke-width: 3;
+}
+
+.chart-crosshair-line {
+  stroke: var(--gray-400);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+/* Floating Interactive Tooltip */
+.chart-tooltip {
+  position: absolute;
+  display: none;
+  background: rgba(17, 24, 39, 0.94);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  pointer-events: none;
+  z-index: 60;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  min-width: 190px;
+  line-height: 1.45;
+}
+
+.chart-tooltip .tt-date {
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  color: var(--gray-200);
+}
+
+.chart-tooltip .tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 3px;
+}
+
+.chart-tooltip .tt-row.direct {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.chart-tooltip .tt-row.mandi {
+  color: #a5b4fc;
+}
+
+.chart-tooltip .tt-row.retail {
+  color: #fdba74;
+}
+
+.chart-tooltip .tt-gain {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  color: #86efac;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+
+/* Chart Legend Bar */
+.chart-legend-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid var(--gray-200);
+  padding-top: 14px;
+}
+
+.legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  user-select: none;
+  color: var(--gray-700);
+}
+
+.legend-btn:hover {
+  border-color: var(--gray-400);
+  background: var(--gray-50);
+}
+
+.legend-btn.inactive {
+  opacity: 0.4;
+  text-decoration: line-through;
+  background: var(--gray-100);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dot-direct {
+  background: #15803d;
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.25);
+}
+
+.dot-mandi {
+  background: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+.dot-retail {
+  background: #ea580c;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.25);
+}
+
+.chart-legend-hint {
+  font-size: 0.76rem;
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+/* ==========================================================================
+   DUAL SECTION: DEMAND BARS & REGIONAL DISPARITY
+   ========================================================================== */
+.insights-dual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.dual-card {
+  background: #ffffff;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.dual-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dual-card-header h4 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.dual-card-header p {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+.dual-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Demand Bars */
+.demand-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demand-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.demand-bar-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.demand-bar-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.2);
+}
+
+.demand-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.demand-bar-track {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.demand-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.demand-bar-fill.fill-high {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.demand-bar-fill.fill-medium {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.demand-bar-fill.fill-low {
+  background: linear-gradient(90deg, #9ca3af 0%, #6b7280 100%);
+}
+
+.demand-bar-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.73rem;
+  color: var(--gray-600);
+}
+
+/* Regional Arbitrage Cards */
+.regional-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.regional-card-item {
+  padding: 11px 13px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  background: #ffffff;
+  transition: var(--transition-smooth);
+}
+
+.regional-card-item:hover {
+  border-color: var(--gray-300);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.reg-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.87rem;
+  color: var(--gray-900);
+}
+
+.reg-mandi-sub {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin: 2px 0 8px;
+}
+
+.reg-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: var(--gray-50);
+  padding: 7px 10px;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  text-align: center;
+}
+
+.reg-metric-label {
+  color: var(--gray-500);
+  display: block;
+}
+
+.reg-metric-val {
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-top: 1px;
 }
 
 /* Interactive AI Simulator Card */

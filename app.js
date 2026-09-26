@@ -20,7 +20,15 @@
     selectedCropForOrder: null,
     searchQuery: '',
     demandFilter: 'all',
-    quickFilter: 'all'
+    quickFilter: 'all',
+    chartCrop: 'tomato',
+    chartDays: 7,
+    chartVisibleSeries: {
+      direct: true,
+      mandi: true,
+      retail: true
+    },
+    insightsPerspective: 'consumer' // 'consumer' or 'farmer'
   };
 
   // ---------------------------------------------------------------------------
@@ -67,6 +75,13 @@
       if (STATE.currentUser.role === 'farmer') switchView('farmer');
       else if (STATE.currentUser.role === 'transporter') switchView('transporter');
       else switchView('marketplace');
+    }
+
+    // Auto-set Market Insights perspective based on active session
+    if (STATE.currentUser && STATE.currentUser.role === 'farmer') {
+      STATE.insightsPerspective = 'farmer';
+    } else {
+      STATE.insightsPerspective = 'consumer';
     }
 
     renderMarketplace();
@@ -283,6 +298,11 @@
 
   function loginUser(user) {
     STATE.currentUser = user;
+    if (user && user.role === 'farmer') {
+      STATE.insightsPerspective = 'farmer';
+    } else {
+      STATE.insightsPerspective = 'consumer';
+    }
     persist();
     updateUserSessionUI();
     showToast(`Signed in as ${user.name} (${user.role.toUpperCase()})`);
@@ -513,6 +533,26 @@
         }).join('');
       }
     }
+
+    // Render Farmer Dedicated AI Mandi Benchmark & Pricing Guidance Table
+    const fRulesTbody = document.getElementById('farmer-mandi-rules-tbody');
+    if (fRulesTbody && typeof AI_RULES !== 'undefined') {
+      fRulesTbody.innerHTML = Object.keys(AI_RULES).map(k => {
+        const r = AI_RULES[k];
+        const icon = r.demand === 'High' ? '📈' : (r.demand === 'Medium' ? '⚡' : '📉');
+        const premium = Math.round(((r.suggestedPrice - r.baseMandiPrice) / r.baseMandiPrice) * 1000) / 10;
+        return `
+          <tr>
+            <td><strong>${r.crop}</strong></td>
+            <td><span class="demand-pill demand-${r.demand.toLowerCase()}">${icon} ${r.demand}</span></td>
+            <td style="color:#6366f1; font-weight:600;">₹${r.baseMandiPrice} / kg</td>
+            <td><strong style="color:var(--primary); font-size:0.95rem;">₹${r.suggestedPrice} / kg</strong></td>
+            <td><span class="status-badge status-delivered" style="font-weight:700;">+${premium}% vs Mandi</span></td>
+            <td style="font-size:0.83rem; color:var(--gray-600);">${r.farmerReason || r.reason}</td>
+          </tr>
+        `;
+      }).join('');
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -641,23 +681,472 @@
   // ---------------------------------------------------------------------------
   // Market Insights & Interactive AI Simulator
   // ---------------------------------------------------------------------------
-  function renderInsights() {
-    const rulesTbody = document.getElementById('insights-rules-tbody');
-    if (!rulesTbody) return;
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Market Insights, Interactive Charts & Real-Time Analytics (Role-Adaptive)
+  // ---------------------------------------------------------------------------
+  function setInsightsPerspective(persp) {
+    STATE.insightsPerspective = persp;
+    renderInsights();
+    evaluateSimulator();
+  }
 
-    rulesTbody.innerHTML = Object.keys(AI_RULES).map(k => {
-      const r = AI_RULES[k];
-      const icon = r.demand === 'High' ? '📈' : (r.demand === 'Medium' ? '⚡' : '📉');
+  function renderInsights() {
+    const isFarmer = STATE.insightsPerspective === 'farmer';
+
+    // 1. Perspective Pill States
+    const pillConsumer = document.getElementById('pill-persp-consumer');
+    const pillFarmer = document.getElementById('pill-persp-farmer');
+    const badge = document.getElementById('persp-active-badge');
+    if (pillConsumer) pillConsumer.classList.toggle('active', !isFarmer);
+    if (pillFarmer) pillFarmer.classList.toggle('active', isFarmer);
+    if (badge) {
+      badge.textContent = isFarmer ? '🧑🌾 Farmer Mode' : '🛒 Consumer Mode';
+    }
+
+    // 2. Dynamic 4th Metric Card
+    const dynTitle = document.getElementById('insight-dynamic-title');
+    const dynVal = document.getElementById('insight-dynamic-val');
+    const dynSub = document.getElementById('insight-dynamic-sub');
+    if (isFarmer) {
+      if (dynTitle) dynTitle.textContent = 'Farmer Profit Premium';
+      if (dynVal) dynVal.textContent = '+15.8%';
+      if (dynSub) {
+        dynSub.textContent = 'Higher earnings vs Mandi';
+        dynSub.style.color = '#15803d';
+      }
+    } else {
+      if (dynTitle) dynTitle.textContent = 'Direct Buyer Savings';
+      if (dynVal) dynVal.textContent = 'Save ₹11 / kg (33%)';
+      if (dynSub) {
+        dynSub.textContent = 'Cheaper than supermarket retail';
+        dynSub.style.color = '#15803d';
+      }
+    }
+
+    renderPriceTrendChart();
+    renderDemandDistributionBars();
+    renderRegionalArbitrageCards();
+
+    // 3. Render Role-Adaptive Demand Prediction & Price Comparison Table
+    const tableTitle = document.getElementById('insights-table-title');
+    const tableSubtitle = document.getElementById('insights-table-subtitle');
+    const tableBadge = document.getElementById('insights-table-badge');
+    const thead = document.getElementById('insights-rules-thead');
+    const tbody = document.getElementById('insights-rules-tbody');
+
+    if (isFarmer) {
+      // FARMER PERSPECTIVE: Wholesale Mandi Base Rate vs Recommended Direct Price
+      if (tableTitle) tableTitle.textContent = 'Farmer Demand Rules & Wholesale Mandi Arbitrage';
+      if (tableSubtitle) tableSubtitle.textContent = 'Guidance for agricultural producers: list above wholesale mandi base rates without losing buyer demand.';
+      if (tableBadge) {
+        tableBadge.textContent = '🧑🌾 Farmer Selling Lens';
+        tableBadge.style.background = '#eff6ff';
+        tableBadge.style.color = '#1d4ed8';
+        tableBadge.style.borderColor = '#bfdbfe';
+      }
+      if (thead) {
+        thead.innerHTML = `
+          <tr>
+            <th>Crop Name</th>
+            <th>Demand Indicator</th>
+            <th>Wholesale Mandi Base Rate</th>
+            <th>Recommended Direct Price</th>
+            <th>Farmer Profit Premium</th>
+            <th>AI Selling Guidance</th>
+          </tr>
+        `;
+      }
+      if (tbody && typeof AI_RULES !== 'undefined') {
+        tbody.innerHTML = Object.keys(AI_RULES).map(k => {
+          const r = AI_RULES[k];
+          const icon = r.demand === 'High' ? '📈' : (r.demand === 'Medium' ? '⚡' : '📉');
+          const premium = Math.round(((r.suggestedPrice - r.baseMandiPrice) / r.baseMandiPrice) * 1000) / 10;
+          return `
+            <tr>
+              <td><strong>${r.crop}</strong></td>
+              <td><span class="demand-pill demand-${r.demand.toLowerCase()}">${icon} ${r.demand} Demand</span></td>
+              <td style="color:#6366f1; font-weight:600;">₹${r.baseMandiPrice} / kg</td>
+              <td><strong style="color:var(--primary); font-size:1.02rem;">₹${r.suggestedPrice} / kg</strong></td>
+              <td><span class="status-badge status-delivered" style="font-weight:700;">+${premium}% vs Mandi</span></td>
+              <td style="font-size:0.83rem; color:var(--gray-600);">${r.farmerReason || r.reason}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    } else {
+      // CONSUMER PERSPECTIVE: Supermarket Retail Rate vs FarmSetu Direct Price (Direct is LOWER!)
+      if (tableTitle) tableTitle.textContent = 'Direct Farm Savings vs Retail Supermarket Rates';
+      if (tableSubtitle) tableSubtitle.textContent = 'Why buy direct on FarmSetu: see how much you save per kilo compared to local retail grocery prices.';
+      if (tableBadge) {
+        tableBadge.textContent = '🛒 Consumer Savings Lens';
+        tableBadge.style.background = 'var(--primary-light)';
+        tableBadge.style.color = 'var(--primary)';
+        tableBadge.style.borderColor = 'var(--primary-border)';
+      }
+      if (thead) {
+        thead.innerHTML = `
+          <tr>
+            <th>Crop Name</th>
+            <th>Demand Status</th>
+            <th>Supermarket / Retail Price</th>
+            <th>FarmSetu Direct Price</th>
+            <th>Your Direct Savings</th>
+            <th>Consumer Benefit</th>
+          </tr>
+        `;
+      }
+      if (tbody && typeof AI_RULES !== 'undefined') {
+        tbody.innerHTML = Object.keys(AI_RULES).map(k => {
+          const r = AI_RULES[k];
+          const icon = r.demand === 'High' ? '🔥' : (r.demand === 'Medium' ? '⚡' : '📉');
+          const retail = r.retailPrice || (r.suggestedPrice + 12);
+          const saved = retail - r.suggestedPrice;
+          const savedPct = Math.round((saved / retail) * 100);
+          return `
+            <tr>
+              <td><strong>${r.crop}</strong></td>
+              <td><span class="demand-pill demand-${r.demand.toLowerCase()}">${icon} ${r.demand}</span></td>
+              <td style="color:#ea580c; text-decoration:line-through; font-weight:600;">₹${retail} / kg</td>
+              <td><strong style="color:var(--primary); font-size:1.05rem;">₹${r.suggestedPrice} / kg</strong></td>
+              <td><span class="status-badge status-delivered" style="font-size:0.82rem; font-weight:700;">Save ₹${saved} / kg (${savedPct}% Off)</span></td>
+              <td style="font-size:0.84rem; color:var(--gray-700);">${r.consumerReason || `Direct Farm Fresh (Save ₹${saved}/kg)`}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  }
+
+  // Interactive SVG Price Trend & Mandi Arbitrage Chart
+  function renderPriceTrendChart() {
+    const svg = document.getElementById('price-trend-svg');
+    if (!svg) return;
+
+    const cropKey = STATE.chartCrop || 'tomato';
+    const cropData = (typeof CROP_HISTORICAL_DATA !== 'undefined' && CROP_HISTORICAL_DATA[cropKey])
+      ? CROP_HISTORICAL_DATA[cropKey]
+      : (typeof CROP_HISTORICAL_DATA !== 'undefined' ? CROP_HISTORICAL_DATA['tomato'] : null);
+
+    if (!cropData) return;
+
+    const daysKey = `days${STATE.chartDays || 7}`;
+    const seriesData = cropData[daysKey] || cropData.days7;
+    const labels = seriesData.labels;
+    const directVals = seriesData.direct;
+    const mandiVals = seriesData.mandi;
+    const retailVals = seriesData.retail;
+
+    // Update Live Stats Ribbon
+    const currentDirect = directVals[directVals.length - 1];
+    const currentMandi = mandiVals[mandiVals.length - 1];
+    const currentRetail = retailVals[retailVals.length - 1];
+    const premiumPct = Math.round(((currentDirect - currentMandi) / currentMandi) * 1000) / 10;
+    const savingsAmount = currentRetail - currentDirect;
+    const savingsPct = Math.round((savingsAmount / currentRetail) * 100);
+
+    const statDirect = document.getElementById('trend-stat-direct');
+    const statPremium = document.getElementById('trend-stat-premium');
+    const statMandi = document.getElementById('trend-stat-mandi');
+    const statRetail = document.getElementById('trend-stat-retail');
+    const statSavings = document.getElementById('trend-stat-savings');
+    const statStatus = document.getElementById('trend-stat-status');
+    const insightGain = document.getElementById('insight-farmer-gain');
+
+    if (statDirect) statDirect.textContent = `₹${currentDirect} / kg`;
+    if (statPremium) statPremium.textContent = `+${premiumPct}% vs Mandi Base`;
+    if (statMandi) statMandi.textContent = `₹${currentMandi} / kg`;
+    if (statRetail) statRetail.textContent = `₹${currentRetail} / kg`;
+    if (statSavings) statSavings.textContent = `₹${savingsAmount} / kg (${savingsPct}% Saved)`;
+    if (statStatus) statStatus.textContent = cropData.status;
+    if (insightGain) insightGain.textContent = `+${premiumPct}%`;
+
+    // Responsive SVG Geometry
+    const width = 760;
+    const height = 280;
+    const padLeft = 52;
+    const padRight = 30;
+    const padTop = 30;
+    const padBottom = 40;
+    const chartW = width - padLeft - padRight;
+    const chartH = height - padTop - padBottom;
+
+    const visibleSeries = STATE.chartVisibleSeries || { direct: true, mandi: true, retail: true };
+    let allVals = [];
+    if (visibleSeries.direct) allVals.push(...directVals);
+    if (visibleSeries.mandi) allVals.push(...mandiVals);
+    if (visibleSeries.retail) allVals.push(...retailVals);
+    if (allVals.length === 0) allVals = [10, 20, 30];
+
+    const minV = Math.max(0, Math.floor(Math.min(...allVals) * 0.85));
+    const maxV = Math.ceil(Math.max(...allVals) * 1.15);
+
+    const getX = (i) => padLeft + (i / (labels.length - 1)) * chartW;
+    const getY = (val) => padTop + chartH - ((val - minV) / (maxV - minV)) * chartH;
+
+    function buildSmoothPath(points) {
+      if (points.length < 2) return "";
+      let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[Math.max(0, i - 1)];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[Math.min(points.length - 1, i + 2)];
+
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+        d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+      }
+      return d;
+    }
+
+    const directPoints = directVals.map((v, i) => ({ x: getX(i), y: getY(v), val: v, label: labels[i] }));
+    const mandiPoints = mandiVals.map((v, i) => ({ x: getX(i), y: getY(v), val: v, label: labels[i] }));
+    const retailPoints = retailVals.map((v, i) => ({ x: getX(i), y: getY(v), val: v, label: labels[i] }));
+
+    // Horizontal Grid Lines
+    let gridLinesHtml = "";
+    const steps = 4;
+    for (let s = 0; s <= steps; s++) {
+      const val = Math.round(minV + (s / steps) * (maxV - minV));
+      const y = getY(val);
+      gridLinesHtml += `
+        <line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${(width - padRight).toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-line" />
+        <text x="${(padLeft - 8).toFixed(1)}" y="${(y + 4).toFixed(1)}" class="chart-axis-label" text-anchor="end">₹${val}</text>
+      `;
+    }
+
+    // X-Axis Date Labels
+    let xLabelsHtml = "";
+    labels.forEach((lbl, i) => {
+      const x = getX(i);
+      xLabelsHtml += `
+        <text x="${x.toFixed(1)}" y="${(height - 12).toFixed(1)}" class="chart-axis-label" text-anchor="middle">${lbl}</text>
+      `;
+    });
+
+    const directPath = buildSmoothPath(directPoints);
+    const mandiPath = buildSmoothPath(mandiPoints);
+    const retailPath = buildSmoothPath(retailPoints);
+
+    const areaPath = (directPath && directPoints.length > 0)
+      ? `${directPath} L ${directPoints[directPoints.length - 1].x.toFixed(1)} ${(padTop + chartH).toFixed(1)} L ${directPoints[0].x.toFixed(1)} ${(padTop + chartH).toFixed(1)} Z`
+      : "";
+
+    const defsHtml = `
+      <defs>
+        <linearGradient id="directPriceGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#15803d" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#15803d" stop-opacity="0.01" />
+        </linearGradient>
+      </defs>
+    `;
+
+    let dotsHtml = "";
+    if (visibleSeries.retail) {
+      retailPoints.forEach((p, i) => {
+        dotsHtml += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#ea580c" stroke="#ffffff" stroke-width="1.8" class="chart-dot" data-idx="${i}" />`;
+      });
+    }
+    if (visibleSeries.mandi) {
+      mandiPoints.forEach((p, i) => {
+        dotsHtml += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#6366f1" stroke="#ffffff" stroke-width="1.8" class="chart-dot" data-idx="${i}" />`;
+      });
+    }
+    if (visibleSeries.direct) {
+      directPoints.forEach((p, i) => {
+        dotsHtml += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#15803d" stroke="#ffffff" stroke-width="2" class="chart-dot" data-idx="${i}" />`;
+      });
+    }
+
+    const crosshairHtml = `<line id="chart-crosshair" x1="0" y1="${padTop}" x2="0" y2="${padTop + chartH}" class="chart-crosshair-line" style="display:none;" />`;
+
+    svg.innerHTML = `
+      ${defsHtml}
+      ${gridLinesHtml}
+      ${xLabelsHtml}
+      ${visibleSeries.direct && areaPath ? `<path d="${areaPath}" fill="url(#directPriceGrad)" class="chart-area-fill" />` : ''}
+      ${visibleSeries.retail ? `<path d="${retailPath}" class="chart-curve-retail" />` : ''}
+      ${visibleSeries.mandi ? `<path d="${mandiPath}" class="chart-curve-mandi" />` : ''}
+      ${visibleSeries.direct ? `<path d="${directPath}" class="chart-curve-direct" />` : ''}
+      ${crosshairHtml}
+      ${dotsHtml}
+    `;
+
+    attachChartInteractions(directPoints, mandiPoints, retailPoints, labels);
+  }
+
+  function attachChartInteractions(directPoints, mandiPoints, retailPoints, labels) {
+    const svg = document.getElementById('price-trend-svg');
+    const tooltip = document.getElementById('chart-tooltip');
+    const crosshair = document.getElementById('chart-crosshair');
+    if (!svg || !tooltip) return;
+
+    svg.onmousemove = function (e) {
+      const rect = svg.getBoundingClientRect();
+      const clientX = e.clientX - rect.left;
+      const svgX = (clientX / rect.width) * 760;
+
+      let nearestIdx = 0;
+      let minDist = Infinity;
+      directPoints.forEach((p, idx) => {
+        const dist = Math.abs(p.x - svgX);
+        if (dist < minDist) {
+          minDist = dist;
+          nearestIdx = idx;
+        }
+      });
+
+      const targetPoint = directPoints[nearestIdx];
+      if (!targetPoint) return;
+
+      if (crosshair) {
+        crosshair.setAttribute('x1', targetPoint.x);
+        crosshair.setAttribute('x2', targetPoint.x);
+        crosshair.style.display = 'block';
+      }
+
+      const dVal = directPoints[nearestIdx] ? directPoints[nearestIdx].val : 0;
+      const mVal = mandiPoints[nearestIdx] ? mandiPoints[nearestIdx].val : 0;
+      const rVal = retailPoints[nearestIdx] ? retailPoints[nearestIdx].val : 0;
+      const gainPct = mVal ? Math.round(((dVal - mVal) / mVal) * 1000) / 10 : 0;
+      const saveAmt = rVal - dVal;
+      const savePct = rVal ? Math.round((saveAmt / rVal) * 100) : 0;
+
+      tooltip.innerHTML = `
+        <div class="tt-date">📅 ${labels[nearestIdx]}, 2026</div>
+        <div class="tt-row direct">
+          <span>🌱 Direct Payout:</span>
+          <span>₹${dVal} / kg</span>
+        </div>
+        <div class="tt-row mandi">
+          <span>🟣 Wholesale Mandi:</span>
+          <span>₹${mVal} / kg</span>
+        </div>
+        <div class="tt-row retail">
+          <span>🟠 Supermarket:</span>
+          <span>₹${rVal} / kg</span>
+        </div>
+        <div class="tt-gain">
+          ▲ Farmer Profit: +${gainPct}% (+₹${dVal - mVal}/kg)<br>
+          ▼ Consumer Saved: ₹${saveAmt}/kg (${savePct}%)
+        </div>
+      `;
+
+      tooltip.style.display = 'block';
+
+      const normX = (targetPoint.x / 760) * rect.width;
+      const normY = (targetPoint.y / 280) * rect.height;
+
+      let ttLeft = normX + 16;
+      if (ttLeft + 195 > rect.width) {
+        ttLeft = normX - 205;
+      }
+      let ttTop = Math.max(10, normY - 45);
+
+      tooltip.style.left = `${ttLeft}px`;
+      tooltip.style.top = `${ttTop}px`;
+    };
+
+    svg.onmouseleave = function () {
+      if (tooltip) tooltip.style.display = 'none';
+      if (crosshair) crosshair.style.display = 'none';
+    };
+  }
+
+  // Cross-Crop Demand Index & Mandi Arrival Distribution Visualizer
+  function renderDemandDistributionBars() {
+    const container = document.getElementById('demand-bars-container');
+    if (!container || typeof CROP_HISTORICAL_DATA === 'undefined') return;
+
+    const crops = Object.keys(CROP_HISTORICAL_DATA).map(k => CROP_HISTORICAL_DATA[k]);
+
+    container.innerHTML = crops.map(c => {
+      const isSelected = (STATE.chartCrop || 'tomato').toLowerCase() === c.crop.toLowerCase();
+      const fillClass = c.demandIndex >= 85 ? 'fill-high' : (c.demandIndex >= 70 ? 'fill-medium' : 'fill-low');
+      const badgeText = c.demandIndex >= 85 ? '🔥 High Demand' : (c.demandIndex >= 70 ? '⚡ Balanced' : '📉 Surplus');
+      const badgeClass = c.demandIndex >= 85 ? 'demand-high' : (c.demandIndex >= 70 ? 'demand-medium' : 'demand-low');
+
       return `
-        <tr>
-          <td><strong>${r.crop}</strong></td>
-          <td><span class="demand-pill demand-${r.demand.toLowerCase()}">${icon} ${r.demand} Demand</span></td>
-          <td>₹${r.baseMandiPrice} / kg</td>
-          <td><strong style="color:var(--primary);">₹${r.suggestedPrice} / kg</strong></td>
-          <td>${r.reason}</td>
-        </tr>
+        <div class="demand-bar-item ${isSelected ? 'selected' : ''}" data-crop="${c.crop.toLowerCase()}" title="Click to view ${c.crop} price trends">
+          <div class="demand-bar-head">
+            <span>${c.emoji} ${c.crop}</span>
+            <span class="demand-pill ${badgeClass}">${badgeText} (${c.demandIndex}%)</span>
+          </div>
+          <div class="demand-bar-track">
+            <div class="demand-bar-fill ${fillClass}" style="width: ${c.demandIndex}%;"></div>
+          </div>
+          <div class="demand-bar-footer">
+            <span>Arrivals: <strong>${c.arrivalVolume}</strong></span>
+            <span style="color:#15803d; font-weight:700;">Farmer Gain: ${c.farmerPremium}</span>
+          </div>
+        </div>
       `;
     }).join('');
+
+    container.querySelectorAll('.demand-bar-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const cropKey = item.getAttribute('data-crop');
+        if (cropKey) {
+          selectChartCrop(cropKey);
+        }
+      });
+    });
+  }
+
+  // Regional Market Disparity & Arbitrage Cards
+  function renderRegionalArbitrageCards() {
+    const container = document.getElementById('regional-cards-list');
+    if (!container || typeof REGIONAL_MARKET_DATA === 'undefined') return;
+
+    container.innerHTML = REGIONAL_MARKET_DATA.map(r => {
+      const isHigh = r.demandLevel === 'High';
+      const pillClass = isHigh ? 'demand-high' : 'demand-medium';
+      const pillIcon = isHigh ? '🔥' : '⚡';
+
+      return `
+        <div class="regional-card-item">
+          <div class="reg-head">
+            <span>📍 ${r.region}</span>
+            <span class="demand-pill ${pillClass}">${pillIcon} ${r.demandLevel} Demand</span>
+          </div>
+          <div class="reg-mandi-sub">Mandi APMC: ${r.mandis} &bull; Top: <strong>${r.topCrop}</strong></div>
+          <div class="reg-metrics-grid">
+            <div>
+              <span class="reg-metric-label">Wholesale Mandi</span>
+              <span class="reg-metric-val" style="color:#6366f1;">${r.mandiPrice}</span>
+            </div>
+            <div>
+              <span class="reg-metric-label">FarmSetu Direct</span>
+              <span class="reg-metric-val" style="color:#15803d;">${r.directPrice}</span>
+            </div>
+            <div>
+              <span class="reg-metric-label">Farmer Premium</span>
+              <span class="reg-metric-val" style="color:#15803d;">${r.farmerGain}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function selectChartCrop(cropKey) {
+    STATE.chartCrop = cropKey.toLowerCase();
+
+    const selectEl = document.getElementById('trend-crop-select');
+    if (selectEl) selectEl.value = STATE.chartCrop;
+
+    const simSelectEl = document.getElementById('sim-crop-select');
+    if (simSelectEl && simSelectEl.value !== STATE.chartCrop) {
+      simSelectEl.value = STATE.chartCrop;
+      evaluateSimulator();
+    }
+
+    renderPriceTrendChart();
+    renderDemandDistributionBars();
   }
 
   function evaluateSimulator() {
@@ -710,12 +1199,28 @@
       advantagePercent = 4;
     }
 
+    const isFarmer = STATE.insightsPerspective === 'farmer';
     const suggestedPrice = Math.round(baseRule.baseMandiPrice * multiplier);
-    const icon = demandLevel === 'High' ? '📈' : (demandLevel === 'Medium' ? '⚡' : '📉');
+    const retail = baseRule.retailPrice || (suggestedPrice + 12);
+    const icon = demandLevel === 'High' ? (isFarmer ? '📈' : '🔥') : (demandLevel === 'Medium' ? '⚡' : '📉');
 
     if (resDemand) resDemand.innerHTML = `${icon} ${demandLevel} Demand`;
     if (resPrice) resPrice.textContent = `₹${suggestedPrice} / kg`;
-    if (resAdvantage) resAdvantage.textContent = `+${advantagePercent}% vs Mandi`;
+
+    const advLbl = document.getElementById('sim-advantage-lbl');
+    if (advLbl) {
+      advLbl.textContent = isFarmer ? 'Farmer Profit Premium' : 'Consumer Direct Savings';
+    }
+
+    if (resAdvantage) {
+      if (isFarmer) {
+        resAdvantage.textContent = `+${advantagePercent}% vs Mandi`;
+      } else {
+        const saved = retail - suggestedPrice;
+        const savedPct = Math.round((saved / retail) * 100);
+        resAdvantage.textContent = `Save ${savedPct}% (Save ₹${saved}/kg)`;
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1236,8 +1741,49 @@
     // Interactive AI Demand & Price Simulator
     const simCrop = document.getElementById('sim-crop-select');
     const simSlider = document.getElementById('sim-supply-slider');
-    if (simCrop) simCrop.addEventListener('change', evaluateSimulator);
+    if (simCrop) {
+      simCrop.addEventListener('change', () => {
+        evaluateSimulator();
+        if (STATE.chartCrop !== simCrop.value) {
+          selectChartCrop(simCrop.value);
+        }
+      });
+    }
     if (simSlider) simSlider.addEventListener('input', evaluateSimulator);
+
+    // Interactive Price Trend Chart Controls
+    const trendCropSelect = document.getElementById('trend-crop-select');
+    if (trendCropSelect) {
+      trendCropSelect.addEventListener('change', (e) => {
+        selectChartCrop(e.target.value);
+      });
+    }
+
+    document.querySelectorAll('#trend-timeframe-pills .timeframe-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('#trend-timeframe-pills .timeframe-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        STATE.chartDays = parseInt(pill.getAttribute('data-days'), 10) || 7;
+        renderPriceTrendChart();
+      });
+    });
+
+    ['direct', 'mandi', 'retail'].forEach(series => {
+      const btn = document.getElementById(`legend-btn-${series}`);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          STATE.chartVisibleSeries[series] = !STATE.chartVisibleSeries[series];
+          btn.classList.toggle('inactive', !STATE.chartVisibleSeries[series]);
+          renderPriceTrendChart();
+        });
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (STATE.currentView === 'insights') {
+        renderPriceTrendChart();
+      }
+    });
 
     // Smooth Floating Scroll-to-Top Button
     const scrollTopBtn = document.getElementById('btn-scroll-top');
